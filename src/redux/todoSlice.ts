@@ -1,68 +1,75 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, isFulfilled, isPending, isRejected } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = "https://jsonplaceholder.typicode.com/todos";
+const API_URL = "http://localhost:4000/todos";
 export const ITEMS_PER_PAGE = 10;
 
 export interface Todo {
   id: number;
   title: string;
-  completed: boolean;
 }
 
 interface TodoState {
-  todos: Todo[];
+  list: Todo[];
   total: number;
-  page: number;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: TodoState = {
-  todos: [],
+  list: [],
   total: 0,
-  page: 1,
-  loading: false,
+  loading: true,
   error: null,
 };
 
-// Fetches one page. The API sends the total number of todos in a response header.
 export const fetchTodos = createAsyncThunk("todos/fetchTodos", async (page: number) => {
-  const res = await axios.get<Todo[]>(API_URL, {
-    params: { _page: page, _limit: ITEMS_PER_PAGE },
-  });
-  return { todos: res.data, total: Number(res.headers["x-total-count"]) };
+  const res = await axios.get<Todo[]>(
+    `${API_URL}?_page=${page}&_limit=${ITEMS_PER_PAGE}&_sort=id&_order=desc`,
+  );
+  return { list: res.data, total: Number(res.headers["x-total-count"]) };
+});
+
+export const addTodo = createAsyncThunk("todos/addTodo", async (title: string) => {
+  await axios.post(API_URL, { title });
+});
+
+export const updateTodo = createAsyncThunk("todos/updateTodo", async (todo: Todo) => {
+  await axios.put(`${API_URL}/${todo.id}`, todo);
+  return todo;
+});
+
+export const deleteTodo = createAsyncThunk("todos/deleteTodo", async (id: number) => {
+  await axios.delete(`${API_URL}/${id}`);
 });
 
 const todoSlice = createSlice({
   name: "todos",
   initialState,
-  reducers: {
-    setPage: (state, action: PayloadAction<number>) => {
-      state.page = action.payload;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchTodos.pending, (state) => {
+      .addCase(fetchTodos.fulfilled, (state, action) => {
+        state.list = action.payload.list;
+        state.total = action.payload.total;
+      })
+      .addCase(updateTodo.fulfilled, (state, action) => {
+        state.list = state.list.map((todo) =>
+          todo.id === action.payload.id ? action.payload : todo,
+        );
+      })
+      .addMatcher(isPending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchTodos.fulfilled, (state, action) => {
-        // Ignore a slow response from a page the user has already left.
-        if (action.meta.arg !== state.page) return;
+      .addMatcher(isFulfilled, (state) => {
         state.loading = false;
-        state.todos = action.payload.todos;
-        state.total = action.payload.total;
       })
-      .addCase(fetchTodos.rejected, (state, action) => {
-        if (action.meta.arg !== state.page) return;
+      .addMatcher(isRejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Something went wrong";
       });
   },
 });
 
-export const { setPage } = todoSlice.actions;
 export default todoSlice.reducer;

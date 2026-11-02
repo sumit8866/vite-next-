@@ -1,11 +1,10 @@
 # Vite template
 
-React + TypeScript + Redux Toolkit + Tailwind CSS v4, with a simple todo pagination example.
+React + TypeScript + Redux Toolkit + Tailwind CSS v4, with a todo list: add, edit, delete and pagination.
 
-Run `npm install`, then `npm run dev`.
+Run `npm install`, then `npm run dev`. This starts the app and a small local API together.
 
-- `src/redux/store.ts` - the store. Add new slices here.
-- `src/redux/todoSlice.ts` - example slice: fetches one page of todos.
-- `src/components/TodoList.tsx` - example page.
-- `src/components/Pagination.tsx` - reusable pagination buttons.
-"# vite-next-" 
+- `db.json` - where your todos are saved. It starts empty.
+- `src/redux/store.ts` - the store.
+- `src/redux/todoSlice.ts` - fetch, add, edit and delete. Change `API_URL` here to use a real API.
+- `src/components/TodoList.tsx` - the todo page.
