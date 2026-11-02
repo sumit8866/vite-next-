@@ -2,54 +2,46 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../redux/store";
-import { addTodo, deleteTodo, fetchTodos, ITEMS_PER_PAGE, updateTodo } from "../redux/todoSlice";
+import { addTodo, deleteTodo, setTodos, updateTodo } from "../redux/todoSlice";
 
+const itemsPerPage = 10;
 const pageButton = "rounded-md px-3 py-2 text-sm shadow-sm transition-all hover:bg-black hover:text-white";
 
 export default function TodoList() {
   const dispatch = useDispatch<AppDispatch>();
-  const { list, total, loading, error } = useSelector((state: RootState) => state.todos);
+  const list = useSelector((state: RootState) => state.todos.list);
 
   const [page, setPage] = useState(1);
   const [title, setTitle] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(list.length / itemsPerPage);
+  const pageList = list.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   useEffect(() => {
-    dispatch(fetchTodos(page));
-  }, [dispatch, page]);
+    dispatch(setTodos(JSON.parse(localStorage.getItem("todos") ?? "[]")));
+  }, [dispatch]);
 
-  // setPage fetches through the useEffect above, but the same page needs its own fetch.
-  const goToPage = (newPage: number) => {
-    if (newPage === page) dispatch(fetchTodos(page));
-    else setPage(newPage);
-  };
-
-  const handleAdd = async (event: FormEvent) => {
+  const handleAdd = (event: FormEvent) => {
     event.preventDefault();
     if (!title.trim()) return;
-    const result = await dispatch(addTodo(title.trim()));
-    if (addTodo.fulfilled.match(result)) {
-      setTitle("");
-      goToPage(1); // the newest todo is first
-    }
+    dispatch(addTodo(title.trim()));
+    setTitle("");
+    setPage(1); // the newest todo is first
   };
 
-  const handleSave = async (event: FormEvent, id: number) => {
+  const handleSave = (event: FormEvent, id: number) => {
     event.preventDefault();
     if (!editTitle.trim()) return;
-    const result = await dispatch(updateTodo({ id, title: editTitle.trim() }));
-    if (updateTodo.fulfilled.match(result)) setEditId(null);
+    dispatch(updateTodo({ id, title: editTitle.trim() }));
+    setEditId(null);
   };
 
-  const handleDelete = async (id: number) => {
-    const result = await dispatch(deleteTodo(id));
-    if (deleteTodo.fulfilled.match(result)) {
-      // If that was the last todo on this page, go back one page.
-      goToPage(list.length === 1 && page > 1 ? page - 1 : page);
-    }
+  const handleDelete = (id: number) => {
+    dispatch(deleteTodo(id));
+    // If that was the last todo on this page, go back one page.
+    if (pageList.length === 1 && page > 1) setPage(page - 1);
   };
 
   return (
@@ -63,21 +55,17 @@ export default function TodoList() {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <button type="submit" className="rounded-md bg-black px-4 py-2 text-white" disabled={loading}>
+        <button type="submit" className="rounded-md bg-black px-4 py-2 text-white">
           Add
         </button>
       </form>
 
-      {error && <p className="mb-4 text-center text-red-600">{error}</p>}
-
-      {loading ? (
-        <p className="py-10 text-center text-gray-500">Loading...</p>
-      ) : list.length === 0 ? (
-        !error && <p className="py-10 text-center text-gray-500">No todos</p>
+      {list.length === 0 ? (
+        <p className="py-10 text-center text-gray-500">No todos</p>
       ) : (
         <>
           <ul className="space-y-2">
-            {list.map((todo) => (
+            {pageList.map((todo) => (
               <li key={todo.id} className="rounded-lg bg-white p-3 shadow-md">
                 {editId === todo.id ? (
                   <form onSubmit={(event) => handleSave(event, todo.id)} className="flex items-center gap-2">

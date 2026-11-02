@@ -1,10 +1,9 @@
 # Vite template
 
-React + TypeScript + Redux Toolkit + Tailwind CSS v4, with a todo list: add, edit, delete and pagination.
+React + TypeScript + Redux Toolkit + Tailwind CSS v4, with a todo list: add, edit, delete and pagination. Todos are kept in the Redux store and saved to localStorage.
 
-Run `npm install`, then `npm run dev`. This starts the app and a small local API together.
+Run `npm install`, then `npm run dev`.
 
-- `db.json` - where your todos are saved. It starts empty.
-- `src/redux/store.ts` - the store.
-- `src/redux/todoSlice.ts` - fetch, add, edit and delete. Change `API_URL` here to use a real API.
-- `src/components/TodoList.tsx` - the todo page.
+- `src/redux/store.ts` - the store. Saves the todos to localStorage.
+- `src/redux/todoSlice.ts` - add, edit and delete.
+- `src/components/TodoList.tsx` - the todo page and pagination.
